@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lemonade Work OS</title>
+<style>
+:root { color-scheme: light; }
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+body { background:#f6f7fb; color:#323338; font-size:14px; height:100vh; overflow:hidden; }
+
+.app { display:flex; height:100vh; }
+
+/* ---------- Sidebar ---------- */
+.sidebar { width:220px; background:#fff; border-right:1px solid #e6e9ef; display:flex; flex-direction:column; flex-shrink:0; }
+.ws { display:flex; align-items:center; gap:8px; padding:16px 14px 10px; font-weight:600; font-size:15px; }
+.ws-logo { width:26px; height:26px; border-radius:6px; background:linear-gradient(135deg,#ffcb00,#fdab3d); display:flex; align-items:center; justify-content:center; font-size:14px; }
+.side-label { font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:#676879; padding:14px 14px 6px; display:flex; justify-content:space-between; align-items:center; }
+.side-label button { border:none; background:none; color:#0073ea; cursor:pointer; font-size:16px; line-height:1; padding:0 2px; border-radius:4px; }
+.side-label button:hover { background:#e6f1fd; }
+.board-item { display:flex; align-items:center; gap:8px; padding:7px 14px; cursor:pointer; color:#323338; border-left:3px solid transparent; user-select:none; }
+.board-item:hover { background:#f6f7fb; }
+.board-item.active { background:#e6f1fd; border-left-color:#0073ea; font-weight:500; }
+.board-item .bi { color:#676879; font-size:13px; }
+.board-item .del-b { margin-left:auto; visibility:hidden; border:none; background:none; color:#676879; cursor:pointer; border-radius:4px; padding:1px 5px; }
+.board-item:hover .del-b { visibility:visible; }
+.board-item .del-b:hover { background:#e6e9ef; }
+.side-foot { margin-top:auto; padding:12px 14px; font-size:11.5px; color:#9699a6; border-top:1px solid #e6e9ef; }
+
+/* ---------- Main ---------- */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.board-head { padding:18px 28px 0; background:#fff; }
+.board-title-row { display:flex; align-items:center; gap:12px; }
+.board-title { font-size:22px; font-weight:600; border:1px solid transparent; border-radius:4px; padding:2px 6px; margin-left:-6px; }
+.board-title:hover { border-color:#c3c6d4; }
+.board-title:focus { outline:none; border-color:#0073ea; }
+.head-actions { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.btn { border:none; border-radius:4px; padding:7px 14px; font-size:13.5px; cursor:pointer; font-weight:500; }
+.btn-primary { background:#0073ea; color:#fff; }
+.btn-primary:hover { background:#0060c2; }
+.btn-ghost { background:none; color:#323338; border:1px solid #c3c6d4; }
+.btn-ghost:hover { background:#f6f7fb; }
+.sync-chip { font-size:12px; color:#676879; padding:4px 10px; border-radius:12px; background:#f6f7fb; border:1px solid #e6e9ef; }
+.sync-chip.ok { color:#00854d; background:#e5f7ee; border-color:#bce8d4; }
+.sync-chip.err { color:#bb3354; background:#fdecef; border-color:#f5c6d0; }
+.tabs { display:flex; gap:2px; margin-top:12px; border-bottom:1px solid #e6e9ef; }
+.tab { padding:8px 14px; font-size:13.5px; color:#676879; cursor:default; border-bottom:2px solid transparent; }
+.tab.active { color:#0073ea; border-bottom-color:#0073ea; font-weight:500; }
+.toolbar { display:flex; align-items:center; gap:10px; padding:10px 28px; background:#fff; border-bottom:1px solid #e6e9ef; }
+.search { border:1px solid #c3c6d4; border-radius:4px; padding:6px 10px; font-size:13px; width:200px; }
+.search:focus { outline:none; border-color:#0073ea; }
+
+.board-body { flex:1; overflow:auto; padding:18px 28px 80px; }
+
+/* ---------- Groups & table ---------- */
+.group { margin-bottom:28px; }
+.group-head { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.g-caret { cursor:pointer; color:inherit; font-size:12px; width:16px; transition:transform .15s; user-select:none; }
+.group.collapsed .g-caret { transform:rotate(-90deg); }
+.g-title { font-weight:600; font-size:15px; border:1px solid transparent; border-radius:4px; padding:1px 6px; }
+.g-title:hover { border-color:#c3c6d4; }
+.g-title:focus { outline:none; border-color:#0073ea; background:#fff; }
+.g-count { color:#676879; font-size:12.5px; }
+.g-del { border:none; background:none; color:#9699a6; cursor:pointer; border-radius:4px; padding:2px 6px; visibility:hidden; }
+.group-head:hover .g-del { visibility:visible; }
+.g-del:hover { background:#e6e9ef; }
+
+table { width:100%; border-collapse:collapse; background:#fff; }
+.group.collapsed table, .group.collapsed .summary-row { display:none; }
+th { text-align:left; font-weight:400; font-size:12.5px; color:#676879; padding:6px 10px; border:1px solid #e6e9ef; background:#fff; }
+td { border:1px solid #e6e9ef; padding:0; height:38px; background:#fff; }
+tr:hover td { background:#f6f7fb; }
+.col-item { width:auto; }
+.col-owner { width:110px; }
+.col-status,.col-prio { width:140px; }
+.col-date { width:130px; }
+.col-x { width:36px; }
+.left-bar { width:6px; padding:0; border:none; }
+.item-name { padding:8px 10px; border:none; width:100%; font-size:13.5px; background:transparent; }
+.item-name:focus { outline:1px solid #0073ea; outline-offset:-1px; }
+
+.pill-cell { display:flex; align-items:center; justify-content:center; height:38px; cursor:pointer; color:#fff; font-size:12.5px; font-weight:500; user-select:none; }
+.date-input { border:none; background:transparent; width:100%; height:38px; padding:0 10px; font-size:13px; color:#323338; cursor:pointer; }
+.date-input:focus { outline:1px solid #0073ea; outline-offset:-1px; }
+.owner-cell { display:flex; align-items:center; justify-content:center; height:38px; cursor:pointer; }
+.avatar { width:26px; height:26px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; }
+.avatar.empty { background:#e6e9ef; color:#9699a6; border:1px dashed #c3c6d4; }
+.x-btn { border:none; background:none; color:#c3c6d4; cursor:pointer; width:100%; height:38px; font-size:14px; }
+.x-btn:hover { color:#e2445c; }
+
+.add-row td { border:1px solid #e6e9ef; }
+.add-input { border:none; width:100%; padding:8px 10px; font-size:13px; background:transparent; color:#676879; }
+.add-input:focus { outline:1px solid #0073ea; outline-offset:-1px; }
+
+.summary-row { display:flex; height:24px; margin-top:-1px; }
+.summary-pad { width:6px; }
+.summary-bar { flex:1; display:flex; overflow:hidden; border-radius:0 0 4px 4px; max-width:280px; margin-left:auto; }
+.summary-bar div { height:24px; }
+
+.add-group-btn { border:1px dashed #c3c6d4; background:none; color:#676879; border-radius:4px; padding:8px 16px; cursor:pointer; font-size:13px; }
+.add-group-btn:hover { border-color:#0073ea; color:#0073ea; }
+
+/* ---------- Dropdown ---------- */
+.dropdown { position:fixed; background:#fff; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.2); padding:8px; z-index:100; display:grid; grid-template-columns:1fr 1fr; gap:6px; width:260px; }
+.dropdown .opt { border:none; color:#fff; border-radius:4px; padding:9px 6px; cursor:pointer; font-size:12.5px; font-weight:500; }
+.dropdown .opt:hover { filter:brightness(.93); }
+.dropdown.people { grid-template-columns:1fr; width:180px; }
+.dropdown.people .opt { color:#323338; background:#fff; text-align:left; display:flex; gap:8px; align-items:center; padding:6px 8px; }
+.dropdown.people .opt:hover { background:#f6f7fb; filter:none; }
+
+/* ---------- Modal ---------- */
+.overlay { position:fixed; inset:0; background:rgba(41,47,76,.5); z-index:200; display:flex; align-items:center; justify-content:center; }
+.modal { background:#fff; border-radius:12px; width:520px; max-width:92vw; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 15px 50px rgba(0,0,0,.3); }
+.modal-head { padding:16px 20px; font-weight:600; font-size:16px; border-bottom:1px solid #e6e9ef; display:flex; justify-content:space-between; }
+.modal-head button { border:none; background:none; font-size:16px; cursor:pointer; color:#676879; }
+.modal-body { padding:16px 20px; overflow:auto; }
+.modal-foot { padding:12px 20px; border-top:1px solid #e6e9ef; display:flex; gap:8px; justify-content:flex-end; }
+.hint { font-size:12px; color:#9699a6; margin-top:8px; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="ws"><div class="ws-logo">🍋</div> Lemonade Ads</div>
+    <div class="side-label">Boards <button title="Add board" onclick="addBoard()">+</button></div>
+    <div id="boardList"></div>
+    <div class="board-item" style="color:#0073ea" onclick="addBoard()"><span class="bi">＋</span> Add board</div>
+    <div class="side-foot" id="sideFoot">Connecting…</div>
+  </div>
+
+  <div class="main">
+    <div class="board-head">
+      <div class="board-title-row">
+        <div class="board-title" id="boardTitle" contenteditable="true" spellcheck="false"></div>
+        <div class="head-actions">
+          <span class="sync-chip" id="syncStatus">Connecting…</span>
+          <button class="btn btn-ghost" onclick="askKey()" title="Change access key">⚙ Key</button>
+          <button class="btn btn-primary" onclick="quickNewItem()">+ New item</button>
+        </div>
+      </div>
+      <div class="tabs"><div class="tab active">Main table</div></div>
+    </div>
+    <div class="toolbar">
+      <input class="search" id="search" placeholder="Search items…" oninput="render()">
+      <span id="stats" style="color:#676879;font-size:12.5px;"></span>
+    </div>
+    <div class="board-body" id="boardBody"></div>
+  </div>
+</div>
+
+<div id="ddHost"></div>
+<div id="modalHost"></div>
+
+<script>
+/* ================= Data ================= */
+const STATUSES = [
+  { id:'not',  label:'Not started',   color:'#c4c4c4' },
+  { id:'work', label:'Working on it', color:'#fdab3d' },
+  { id:'stuck',label:'Stuck',         color:'#e2445c' },
+  { id:'done', label:'Done',          color:'#00c875' },
+];
+const PRIOS = [
+  { id:'crit', label:'Critical ⚠', color:'#333333' },
+  { id:'high', label:'High',       color:'#401694' },
+  { id:'med',  label:'Medium',     color:'#5559df' },
+  { id:'low',  label:'Low',        color:'#579bfc' },
+];
+const GROUP_COLORS = ['#0073ea','#00c875','#a25ddc','#fdab3d','#e2445c','#66ccff','#ff642e','#00d2d2'];
+const AV_COLORS = ['#ff642e','#00c875','#a25ddc','#0073ea','#e2445c','#fdab3d','#00d2d2','#5559df'];
+
+let state = null;
+const KEY = 'lemonade-workos-v1';
+const CFG_KEY = 'lemonade-workos-key';
+
+function defaultState(){
+  return {
+    activeBoard: 0,
+    people: ['Tal'],
+    boards: [{
+      name:'My Tasks',
+      groups:[
+        { name:'This week', color:'#0073ea', collapsed:false, items:[] },
+        { name:'Next up', color:'#00c875', collapsed:false, items:[] },
+      ]
+    }]
+  };
+}
+
+function load(){ try { state = JSON.parse(localStorage.getItem(KEY)) || defaultState(); } catch(e){ state = defaultState(); } }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); scheduleSync(); }
+function board(){ return state.boards[state.activeBoard]; }
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ================= Server sync ================= */
+let accessKey = localStorage.getItem(CFG_KEY) || '';
+let syncTimer = null, syncing = false, dirty = false;
+
+function setSync(text, cls){
+  document.getElementById('syncStatus').textContent = text;
+  document.getElementById('syncStatus').className = 'sync-chip ' + (cls||'');
+  document.getElementById('sideFoot').textContent = accessKey ? 'Synced to your server.' : 'Not connected — enter access key.';
+}
+function scheduleSync(){
+  if(!accessKey) return;
+  dirty = true; setSync('Saving…');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(push, 1200);
+}
+async function push(){
+  if(syncing){ scheduleSync(); return; }
+  if(!accessKey || !dirty) return;
+  syncing = true; dirty = false;
+  try {
+    const r = await fetch('api/tasks?key='+encodeURIComponent(accessKey), {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(state) });
+    if(r.status===401){ syncing=false; askKey(true); return; }
+    if(!r.ok) throw new Error();
+    setSync('Synced ✓','ok');
+  } catch(e){
+    dirty = true; setSync('Sync failed — retrying','err');
+    clearTimeout(syncTimer); syncTimer = setTimeout(push, 8000);
+  }
+  syncing = false;
+}
+async function pull(silent){
+  if(!accessKey){ askKey(); return; }
+  if(!silent) setSync('Loading…');
+  try {
+    const r = await fetch('api/tasks?key='+encodeURIComponent(accessKey));
+    if(r.status===401){ askKey(true); return; }
+    if(!r.ok) throw new Error();
+    const remote = await r.json();
+    if(remote && remote.boards){
+      if(JSON.stringify(remote) !== JSON.stringify(state)){
+        state = remote; localStorage.setItem(KEY, JSON.stringify(state)); render(false);
+      }
+    } else { dirty = true; scheduleSync(); } // server empty: seed it with local state
+    setSync('Synced ✓','ok');
+  } catch(e){ if(!silent) setSync('Offline — local only','err'); }
+}
+function askKey(retry){
+  askText(retry ? 'Wrong key — try again' : 'Enter your access key',
+    'API_KEY from Railway…', 'Connect', k=>{
+      accessKey = k; localStorage.setItem(CFG_KEY, k); pull();
+    });
+}
+/* Gentle auto-refresh so changes made by Claude appear while the page is open */
+setInterval(()=>{ if(accessKey && !dirty && !syncing && document.activeElement.tagName!=='INPUT') pull(true); }, 60000);
+
+/* ================= Render ================= */
+function render(doSave=true){
+  if(doSave) save();
+  document.getElementById('boardList').innerHTML = state.boards.map((b,i)=>`
+    <div class="board-item ${i===state.activeBoard?'active':''}" onclick="switchBoard(${i})">
+      <span class="bi">▦</span> <span>${esc(b.name)}</span>
+      ${state.boards.length>1?`<button class="del-b" onclick="event.stopPropagation();delBoard(${i})" title="Delete board">✕</button>`:''}
+    </div>`).join('');
+
+  if(state.activeBoard >= state.boards.length) state.activeBoard = 0;
+  const b = board();
+  const titleEl = document.getElementById('boardTitle');
+  if (document.activeElement !== titleEl) titleEl.textContent = b.name;
+
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  let total=0, done=0;
+
+  document.getElementById('boardBody').innerHTML = b.groups.map((g,gi)=>{
+    const items = g.items.map((it,ii)=>({it,ii})).filter(x=>!q || x.it.name.toLowerCase().includes(q));
+    g.items.forEach(it=>{ total++; if(it.status==='done') done++; });
+    const counts = {}; g.items.forEach(it=>counts[it.status]=(counts[it.status]||0)+1);
+    const barSegs = STATUSES.filter(s=>counts[s.id]).map(s=>
+      `<div style="background:${s.color};width:${(counts[s.id]/Math.max(g.items.length,1))*100}%" title="${s.label}: ${counts[s.id]}"></div>`).join('');
+
+    return `<div class="group ${g.collapsed?'collapsed':''}" style="color:${g.color}">
+      <div class="group-head">
+        <span class="g-caret" onclick="toggleGroup(${gi})">▼</span>
+        <span class="g-title" contenteditable="true" spellcheck="false" onblur="renameGroup(${gi},this.textContent)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${esc(g.name)}</span>
+        <span class="g-count">${g.items.length} item${g.items.length!==1?'s':''}</span>
+        <button class="g-del" onclick="delGroup(${gi})" title="Delete group">🗑</button>
+      </div>
+      <table>
+        <tr><th class="left-bar" style="background:${g.color};border-radius:4px 0 0 0"></th>
+          <th class="col-item">Item</th><th class="col-owner">Owner</th><th class="col-status">Status</th>
+          <th class="col-prio">Priority</th><th class="col-date">Due date</th><th class="col-x"></th></tr>
+        ${items.map(({it,ii})=>{
+          const st = STATUSES.find(s=>s.id===it.status)||STATUSES[0];
+          const pr = PRIOS.find(p=>p.id===it.prio)||PRIOS[2];
+          const ini = it.owner ? it.owner.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() : '';
+          const avc = AV_COLORS[Math.abs(hash(it.owner))%AV_COLORS.length];
+          return `<tr>
+            <td class="left-bar" style="background:${g.color}"></td>
+            <td class="col-item"><input class="item-name" value="${esc(it.name)}" onchange="setItem(${gi},${ii},'name',this.value)"></td>
+            <td class="col-owner"><div class="owner-cell" onclick="openPeople(event,${gi},${ii})">
+              ${it.owner?`<div class="avatar" style="background:${avc}" title="${esc(it.owner)}">${ini}</div>`:`<div class="avatar empty">+</div>`}</div></td>
+            <td class="col-status"><div class="pill-cell" style="background:${st.color}" onclick="openPills(event,${gi},${ii},'status')">${st.label}</div></td>
+            <td class="col-prio"><div class="pill-cell" style="background:${pr.color}" onclick="openPills(event,${gi},${ii},'prio')">${pr.label}</div></td>
+            <td class="col-date"><input type="date" class="date-input" value="${it.date||''}" onchange="setItem(${gi},${ii},'date',this.value)"></td>
+            <td class="col-x"><button class="x-btn" onclick="delItem(${gi},${ii})" title="Delete">✕</button></td>
+          </tr>`;
+        }).join('')}
+        <tr class="add-row"><td class="left-bar" style="background:${g.color};opacity:.4;border-radius:0 0 0 4px"></td>
+          <td colspan="6"><input class="add-input" placeholder="+ Add item" onkeydown="if(event.key==='Enter'&&this.value.trim()){addItem(${gi},this.value.trim());}"></td></tr>
+      </table>
+      <div class="summary-row"><div class="summary-pad"></div><div class="summary-bar">${barSegs}</div></div>
+    </div>`;
+  }).join('') + `<button class="add-group-btn" onclick="addGroup()">+ Add new group</button>`;
+
+  document.getElementById('stats').textContent = total ? `${done}/${total} done` : '';
+}
+
+function hash(s){ let h=0; for(const c of String(s||'')) h=(h*31+c.charCodeAt(0))|0; return h; }
+
+/* ================= Mutations ================= */
+function switchBoard(i){ state.activeBoard=i; closeDD(); render(); }
+function addBoard(){
+  askText('New board','Board name…','Create', name=>{
+    state.boards.push({name, groups:[{name:'Group 1', color:GROUP_COLORS[state.boards.length%GROUP_COLORS.length], collapsed:false, items:[]}]});
+    state.activeBoard = state.boards.length-1; render();
+  });
+}
+function delBoard(i){
+  askConfirm('Delete board "'+state.boards[i].name+'" and everything on it?', ()=>{
+    state.boards.splice(i,1); state.activeBoard=Math.max(0,Math.min(state.activeBoard,state.boards.length-1)); render();
+  });
+}
+function toggleGroup(gi){ board().groups[gi].collapsed=!board().groups[gi].collapsed; render(); }
+function renameGroup(gi,t){ const v=t.trim(); if(v) board().groups[gi].name=v; render(); }
+function delGroup(gi){ const g=board().groups[gi];
+  if(!g.items.length){ board().groups.splice(gi,1); render(); return; }
+  askConfirm('Delete group "'+g.name+'" and its '+g.items.length+' item(s)?', ()=>{
+    board().groups.splice(gi,1); render(); });
+}
+function addGroup(){ const gs=board().groups;
+  gs.push({name:'New group', color:GROUP_COLORS[gs.length%GROUP_COLORS.length], collapsed:false, items:[]}); render(); }
+function addItem(gi,name){ board().groups[gi].items.push({name, owner:'', status:'not', prio:'med', date:''}); render();
+  const inputs=document.querySelectorAll('.add-input'); if(inputs[gi]) inputs[gi].focus(); }
+function setItem(gi,ii,k,v){ board().groups[gi].items[ii][k]=v; render(); }
+function delItem(gi,ii){ board().groups[gi].items.splice(ii,1); render(); }
+function quickNewItem(){ if(!board().groups.length) addGroup(); addItem(0,'New item'); }
+
+document.getElementById('boardTitle').addEventListener('blur', e=>{
+  const v=e.target.textContent.trim(); if(v) board().name=v; render(); });
+document.getElementById('boardTitle').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); }});
+
+/* ================= Dropdowns ================= */
+function closeDD(){ document.getElementById('ddHost').innerHTML=''; }
+document.addEventListener('click', e=>{ if(!e.target.closest('.dropdown') && !e.target.closest('.pill-cell') && !e.target.closest('.owner-cell')) closeDD(); });
+
+function openPills(ev,gi,ii,field){
+  ev.stopPropagation();
+  const opts = field==='status'?STATUSES:PRIOS;
+  showDD(ev, `<div class="dropdown" style="left:0;top:0">${opts.map(o=>
+    `<button class="opt" style="background:${o.color}" onclick="setItem(${gi},${ii},'${field}','${o.id}');closeDD()">${o.label}</button>`).join('')}</div>`);
+}
+function openPeople(ev,gi,ii){
+  ev.stopPropagation();
+  showDD(ev, `<div class="dropdown people" style="left:0;top:0">
+    ${state.people.map(p=>{const c=AV_COLORS[Math.abs(hash(p))%AV_COLORS.length];
+      return `<button class="opt" onclick="setItem(${gi},${ii},'owner','${esc(p)}');closeDD()">
+        <span class="avatar" style="background:${c}">${p.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()}</span>${esc(p)}</button>`;}).join('')}
+    <button class="opt" onclick="setItem(${gi},${ii},'owner','');closeDD()"><span class="avatar empty">–</span>Unassign</button>
+    <button class="opt" style="color:#0073ea" onclick="addPerson(${gi},${ii})">+ Add person</button>
+  </div>`);
+}
+function addPerson(gi,ii){ closeDD();
+  askText('Add person','Person name…','Add', n=>{
+    if(!state.people.includes(n)) state.people.push(n);
+    setItem(gi,ii,'owner',n); });
+}
+function showDD(ev, html){
+  const host=document.getElementById('ddHost'); host.innerHTML=html;
+  const dd=host.firstElementChild, r=ev.currentTarget.getBoundingClientRect();
+  let x=r.left, y=r.bottom+4;
+  if(x+dd.offsetWidth>innerWidth-10) x=innerWidth-dd.offsetWidth-10;
+  if(y+dd.offsetHeight>innerHeight-10) y=r.top-dd.offsetHeight-4;
+  dd.style.left=x+'px'; dd.style.top=y+'px';
+}
+
+/* ================= In-app dialogs ================= */
+function closeModal(){ document.getElementById('modalHost').innerHTML=''; }
+let _dlgCb = null;
+function askText(title, placeholder, okLabel, cb){
+  _dlgCb = cb;
+  document.getElementById('modalHost').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="width:380px">
+      <div class="modal-head"><span>${esc(title)}</span><button onclick="closeModal()">✕</button></div>
+      <div class="modal-body"><input id="dlgInput" class="search" style="width:100%" placeholder="${esc(placeholder)}"
+        onkeydown="if(event.key==='Enter')dlgOk();if(event.key==='Escape')closeModal()">
+        ${title.indexOf('key')>-1||title.indexOf('Key')>-1?'<div class="hint">This is the API_KEY you set in Railway → Variables. Stored only in this browser.</div>':''}
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="dlgOk()">${esc(okLabel)}</button>
+      </div></div></div>`;
+  setTimeout(()=>document.getElementById('dlgInput').focus(),50);
+}
+function dlgOk(){
+  const v = document.getElementById('dlgInput').value.trim();
+  if(!v) return;
+  const cb = _dlgCb; _dlgCb = null; closeModal(); cb(v);
+}
+function askConfirm(msg, cb){
+  _dlgCb = cb;
+  document.getElementById('modalHost').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="width:380px">
+      <div class="modal-head"><span>Are you sure?</span><button onclick="closeModal()">✕</button></div>
+      <div class="modal-body" style="font-size:13.5px">${esc(msg)}</div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" style="background:#e2445c" onclick="const cb=_dlgCb;_dlgCb=null;closeModal();cb()">Delete</button>
+      </div></div></div>`;
+}
+
+/* ================= Init ================= */
+load(); render(false);
+if(accessKey) pull(); else { setSync('Not connected','err'); askKey(); }
+</script>
+</body>
+</html>

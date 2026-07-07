@@ -1,0 +1,12 @@
+{
+  "name": "lemonade-work-os",
+  "version": "1.0.0",
+  "description": "Personal monday-style task manager with a Claude-friendly JSON API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
